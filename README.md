@@ -58,10 +58,19 @@ cd ~/projects/invoices
 skl install pdf     # → ~/projects/invoices/.claude/skills/pdf
 ```
 
-Caution: running it directly in your home folder (`~`) installs into
-`~/.claude/skills/`, which Claude uses globally for every project.
+If you use opencode or any other harness, install the skill with
+
+```bash
+cd ~/projects/invoices
+skl install pdf --to .opencode/skills/    # → ~/projects/invoices/.claude/skills/pdf
+```
 
 ## Settings
+By default, the skills are saved under **~/.skills-library**. If you want to keep the library elsewhere (e.g. in Github, iCloud or Dropbox to sync it), save it under `SKILLS_LIBRARY=/other/path`.
 
-- `SKILLS_LIBRARY=/other/path` – keep the library elsewhere (e.g. in iCloud or Dropbox to sync it)
-- `skl path` – shows where the library lives
+```bash
+export SKILLS_LIBRARY=/other/path
+echo 'export SKILLS_LIBRARY=/other/path' >> ~/.zshrc
+```
+
+`skl path` shows where the library currently lives.
