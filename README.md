@@ -29,14 +29,18 @@ Open a new terminal and run `skl list` to check that it works.
 | `skl show <name>` | description, source and files of a skill |
 | `skl install <name> [name…] [harness]` | copy into the harness folder (default `claude` → `./.claude/skills/`) |
 | `skl install <name> --to <folder>` | copy into any folder |
+| `skl update <name> [name…] [harness]` | refresh an installed skill from the library (checks every harness folder in the project unless one is given) |
 | `skl search <term>` | search skills.sh |
 | `skl get owner/repo@skill` | fetch a skill from GitHub into the library |
 | `skl get owner/repo --all` | fetch every skill in a repo |
 | `skl save <folder>` | add your own skill folder to the library |
 | `skl remove <name>` | delete a skill from the library |
 
-`--force` overwrites existing copies for `install`, `get` and `save`
-(for example to update a skill inside a project).
+`--force` overwrites existing copies for `install`, `get` and `save`.
+
+`skl update` is for a skill you already installed in a project and have since
+changed in the library. It only touches existing copies, skips ones that are
+already identical, and replaces the installed folder with the library version.
 
 ## Typical workflow
 

@@ -10,6 +10,9 @@ Commands:
   skl install <name...> [harness]   copy skill(s) into the harness folder of the
                                     project (default: claude → ./.claude/skills)
   skl install <name...> --to DIR    copy skill(s) into any folder
+  skl update <name...> [harness]    refresh installed skill(s) from the library
+                                    (default: every harness folder in the project
+                                    that has the skill)
   skl search <term>                 search skills.sh
   skl get <owner/repo@skill>        fetch a skill from GitHub/skills.sh into the library
   skl get <owner/repo> --all        fetch all skills of a repo
@@ -176,6 +179,46 @@ def cmd_install(a):
             print(c("33", "• ") + f"{s['dir']} already exists in {target} (use --force to overwrite)")
 
 
+def tree(path):
+    """Relative file path -> bytes, ignoring files that are never copied."""
+    out = {}
+    for root, dns, fns in os.walk(path):
+        dns[:] = [d for d in dns if d != ".git"]
+        for f in fns:
+            if f == META or f in JUNK:
+                continue
+            full = os.path.join(root, f)
+            with open(full, "rb") as fh:
+                out[os.path.relpath(full, path)] = fh.read()
+    return out
+
+
+def cmd_update(a):
+    names = list(a.names)
+    harness = a.harness
+    if len(names) > 1 and names[-1].lower() in HARNESSES:
+        harness = names.pop().lower()
+    if a.to:
+        targets = [a.to]
+    elif harness:
+        targets = [HARNESSES[harness]]
+    else:
+        targets = list(dict.fromkeys(HARNESSES.values()))
+    targets = [os.path.abspath(os.path.expanduser(os.path.join(*t.split("/")))) for t in targets]
+    for name in names:
+        s = find_in_library(name)
+        found = [os.path.join(t, s["dir"]) for t in targets if os.path.isdir(os.path.join(t, s["dir"]))]
+        if not found:
+            print(c("33", "• ") + f"{s['dir']} is not installed here (use skl install {s['dir']})")
+            continue
+        for dest in found:
+            if tree(dest) == tree(s["path"]):
+                print(dim(f"• {s['dir']} is already up to date in {dest}"))
+            else:
+                copy_skill(s["path"], dest, True)
+                print(green("✓ ") + f"{s['dir']} updated in {dest}")
+
+
 def api_search(query, limit):
     url = f"{API}/api/search?" + urllib.parse.urlencode({"q": query, "limit": limit})
     req = urllib.request.Request(url, headers={"User-Agent": "skl"})
@@ -305,6 +348,13 @@ def main():
     s.add_argument("--to", "-t", help="explicit target folder (overrides the harness)")
     s.add_argument("--force", "-f", action="store_true", help="overwrite existing copies")
     s.set_defaults(fn=cmd_install)
+
+    s = sub.add_parser("update", aliases=["up"], help="refresh installed skill(s) from the library")
+    s.add_argument("names", nargs="+")
+    s.add_argument("--harness", "-H", choices=sorted(HARNESSES),
+                   help="only look in this harness folder (same as a trailing harness name)")
+    s.add_argument("--to", "-t", help="explicit folder the skill is installed in")
+    s.set_defaults(fn=cmd_update)
 
     s = sub.add_parser("search", aliases=["s"], help="search skills.sh")
     s.add_argument("query", nargs="+")
