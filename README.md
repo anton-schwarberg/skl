@@ -27,7 +27,7 @@ Open a new terminal and run `skl list` to check that it works.
 |---|---|
 | `skl list` / `skl list pdf` | list all skills in the library (optionally filtered) |
 | `skl show <name>` | description, source and files of a skill |
-| `skl install <name> [name…]` | copy into `./.claude/skills/` |
+| `skl install <name> [name…] [harness]` | copy into the harness folder (default `claude` → `./.claude/skills/`) |
 | `skl install <name> --to <folder>` | copy into any folder |
 | `skl search <term>` | search skills.sh |
 | `skl get owner/repo@skill` | fetch a skill from GitHub into the library |
@@ -74,3 +74,18 @@ echo 'export SKILLS_LIBRARY=/other/path' >> ~/.zshrc
 ```
 
 `skl path` shows where the library currently lives.
+
+### Harnesses
+
+`skl install <name> <harness>` (or `--harness <harness>`) picks the folder:
+
+| Harness | Folder |
+|---|---|
+| `claude` (default) | `.claude/skills` |
+| `opencode` | `.opencode/skills` |
+| `codex`, `agents` | `.agents/skills` |
+| `cursor` | `.cursor/skills` |
+| `gemini` | `.gemini/skills` |
+| `copilot` | `.github/skills` |
+
+MacOS Finder files (`Icon\r`, `.DS_Store`) are never copied.

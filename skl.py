@@ -7,8 +7,9 @@ NOT active there. Only `skl install` copies them into a project.
 Commands:
   skl list [term]                   list skills in the library
   skl show <name>                   description and files of a skill
-  skl install <name...> [--to DIR]  copy skill(s) into a folder
-                                    (default: ./.claude/skills)
+  skl install <name...> [harness]   copy skill(s) into the harness folder of the
+                                    project (default: claude → ./.claude/skills)
+  skl install <name...> --to DIR    copy skill(s) into any folder
   skl search <term>                 search skills.sh
   skl get <owner/repo@skill>        fetch a skill from GitHub/skills.sh into the library
   skl get <owner/repo> --all        fetch all skills of a repo
@@ -33,8 +34,19 @@ import urllib.request
 
 LIB = os.path.expanduser(os.environ.get("SKILLS_LIBRARY", "~/.skills-library"))
 API = os.environ.get("SKILLS_API_URL", "https://skills.sh").rstrip("/")
-DEFAULT_TARGET = os.path.join(".claude", "skills")
 META = ".skl-source"  # records where a skill came from
+JUNK = ("Icon\r", ".DS_Store")  # macOS Finder files (Icon\r = custom folder icon)
+
+# harness name -> skills folder inside the project
+HARNESSES = {
+    "claude": ".claude/skills",
+    "opencode": ".opencode/skills",
+    "codex": ".agents/skills",
+    "agents": ".agents/skills",
+    "cursor": ".cursor/skills",
+    "gemini": ".gemini/skills",
+    "copilot": ".github/skills",
+}
 
 TTY = sys.stdout.isatty() and not os.environ.get("NO_COLOR")
 def c(code, s): return f"\033[{code}m{s}\033[0m" if TTY else s
@@ -140,14 +152,22 @@ def copy_skill(src, dest, force):
         if not force:
             return False
         shutil.rmtree(dest)
-    shutil.copytree(src, dest, ignore=shutil.ignore_patterns(META, ".git"))
+    shutil.copytree(src, dest, ignore=shutil.ignore_patterns(META, ".git", *JUNK))
     return True
 
 
 def cmd_install(a):
-    target = os.path.abspath(os.path.expanduser(a.to))
+    names = list(a.names)
+    harness = a.harness
+    if len(names) > 1 and names[-1].lower() in HARNESSES:
+        harness = names.pop().lower()
+    if a.to:
+        target = a.to
+    else:
+        target = os.path.join(*HARNESSES[harness or "claude"].split("/"))
+    target = os.path.abspath(os.path.expanduser(target))
     os.makedirs(target, exist_ok=True)
-    for name in a.names:
+    for name in names:
         s = find_in_library(name)
         dest = os.path.join(target, s["dir"])
         if copy_skill(s["path"], dest, a.force):
@@ -280,8 +300,9 @@ def main():
 
     s = sub.add_parser("install", aliases=["i"], help="copy skill(s) into a folder")
     s.add_argument("names", nargs="+")
-    s.add_argument("--to", "-t", default=DEFAULT_TARGET,
-                   help=f"target folder (default: ./{DEFAULT_TARGET})")
+    s.add_argument("--harness", "-H", choices=sorted(HARNESSES),
+                   help="target harness (same as a trailing harness name)")
+    s.add_argument("--to", "-t", help="explicit target folder (overrides the harness)")
     s.add_argument("--force", "-f", action="store_true", help="overwrite existing copies")
     s.set_defaults(fn=cmd_install)
 
